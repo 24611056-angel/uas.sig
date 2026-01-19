@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sebaran Toko Roti di Daerah Istimewa Yogyakarta</title>
+
+    <!-- Leaflet -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      #map {
+        height: 100vh;
+        width: 100vw;
+      }
+
+      /* Header Judul */
+      .title-wrap {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 14px;
+        z-index: 999;
+        width: min(1100px, calc(100% - 40px));
+        background: #0b56a5;
+        color: #fff;
+        border-radius: 14px;
+        padding: 18px 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+      .title-wrap h1 {
+        margin: 0;
+        font-size: clamp(20px, 3vw, 44px);
+        font-weight: 800;
+        letter-spacing: 0.3px;
+      }
+      .title-wrap p {
+        margin: 8px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+        opacity: 0.95;
+      }
+
+      /* Panel Legenda kiri */
+      .legend-panel {
+        position: absolute;
+        left: 18px;
+        top: 120px;
+        z-index: 999;
+        width: 360px;
+        background: rgba(197, 246, 240, 0.92);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+        backdrop-filter: blur(6px);
+      }
+      .legend-title {
+        font-size: 34px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        margin: 2px 0 12px;
+      }
+
+      .kab-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 14px;
+        cursor: pointer;
+        margin-bottom: 12px;
+        font-size: 22px;
+        font-weight: 800;
+        transition: 0.15s ease;
+      }
+      .kab-btn:hover {
+        transform: translateY(-1px);
+      }
+      .kab-btn.active {
+        border-color: #2bd6ff;
+        box-shadow: 0 0 0 3px rgba(43, 214, 255, 0.25);
+      }
+      .swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 2px solid rgba(0, 0, 0, 0.25);
+        flex: 0 0 auto;
+      }
+
+      .reset-btn {
+        width: 100%;
+        margin-top: 8px;
+        padding: 16px 16px;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.45);
+        border-radius: 14px;
+        font-size: 22px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .desc {
+        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.78);
+        padding: 14px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        font-size: 16px;
+        line-height: 1.35;
+      }
+      .desc b {
+        font-weight: 900;
+      }
+
+      /* Kompas (pakai kompas.png) */
+      .compass {
+        position: absolute;
+        right: 18px;
+        top: 190px;
+        z-index: 999;
+        width: 74px;
+        height: 74px;
+        background: rgba(255, 255, 255, 0.88);
+        border-radius: 50%;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .compass img {
+        width: 54px;
+        height: 54px;
+        object-fit: contain;
+        user-select: none;
+        pointer-events: none;
+      }
+
+      /* Tombol Home */
+      .home-btn {
+        position: absolute;
+        left: 18px;
+        top: 92px;
+        z-index: 999;
+        background: rgba(255, 255, 255, 0.88);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Popup styling */
+      .popup-title {
+        font-size: 16px;
+        font-weight: 900;
+        margin-bottom: 6px;
+      }
+
+      /* Label kabupaten (teks hitam, tanpa background) */
+      .kab-label {
+        color: #000;
+        font-weight: 900;
+        font-size: 16px;
+        text-shadow:
+          -1px -1px 0 #fff,
+          1px -1px 0 #fff,
+          -1px 1px 0 #fff,
+          1px 1px 0 #fff;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Responsif */
+      @media (max-width: 900px) {
+        .legend-panel {
+          width: 300px;
+        }
+        .legend-title {
+          font-size: 28px;
+        }
+        .kab-btn {
+          font-size: 18px;
+        }
+        .reset-btn {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <div class="title-wrap">
+      <h1>Sebaran Toko Roti di Daerah Istimewa Yogyakarta</h1>
+      <p>Daerah Istimewa Yogyakarta</p>
+    </div>
+
+    <div class="home-btn" id="btnHome">Home</div>
+
+    <div class="legend-panel">
+      <div class="legend-title">LEGENDA PETA</div>
+
+      <button class="kab-btn" data-kab="Kota Yogyakarta" id="btn-kota">
+        <span class="swatch" style="background: #f6b3c2"></span> Kota Yogyakarta
+      </button>
+
+      <button class="kab-btn" data-kab="Sleman" id="btn-sleman">
+        <span class="swatch" style="background: #9ec4ff"></span> Sleman
+      </button>
+
+      <button class="kab-btn" data-kab="Bantul" id="btn-bantul">
+        <span class="swatch" style="background: #9be59b"></span> Bantul
+      </button>
+
+      <button class="kab-btn" data-kab="Kulon Progo" id="btn-kulon">
+        <span class="swatch" style="background: #ffe08a"></span> Kulon Progo
+      </button>
+
+      <button class="kab-btn" data-kab="Gunungkidul" id="btn-gk">
+        <span class="swatch" style="background: #c8a8ff"></span> Gunungkidul
+      </button>
+
+      <button class="reset-btn" id="btnReset">RESET PILIHAN</button>
+
+      <div class="desc">
+        <b>Penjelasan Singkat</b><br />
+        Peta ini menampilkan sebaran <b>toko roti</b> di Provinsi DIY. Setiap
+        titik memiliki informasi <b>nama</b> dan <b>alamat</b>. Wilayah
+        kabupaten/kota diberi warna berbeda dan dapat difilter lewat legenda.
+      </div>
+    </div>
+
+    <div class="compass">
+      <img src="kompas.png" alt="Kompas" />
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+      // =========================
+      // 1) INIT MAP
+      // =========================
+      const map = L.map("map", { zoomControl: true });
+
+      // =========================
+      // 2) BASEMAPS (LAYER SWITCHER)
+      // =========================
+      const osm = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 19,
+          attribution: "Basemap © OpenStreetMap | NAMA KAMU – NIM KAMU",
+        },
+      );
+
+      const topo = L.tileLayer(
+        "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 17,
+          attribution: "Basemap © OpenTopoMap | NAMA KAMU – NIM KAMU",
+        },
+      );
+
+      const esriWorldImagery = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 19,
+          attribution: "Basemap © Esri WorldImagery | NAMA KAMU – NIM KAMU",
+        },
+      );
+
+      const stadia = L.tileLayer(
+        "https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.png",
+        {
+          maxZoom: 20,
+          attribution: "Basemap © Stadia/Stamen | NAMA KAMU – NIM KAMU",
+        },
+      );
+
+      osm.addTo(map);
+
+      L.control
+        .layers(
+          {
+            "Open Street Map": osm,
+            "Open MTB MAP (Topo)": topo,
+            "Esri WorldImagery": esriWorldImagery,
+            Stadia_Stamen: stadia,
+          },
+          {},
+          { position: "topright", collapsed: true },
+        )
+        .addTo(map);
+
+      // Skala
+      L.control
+        .scale({ position: "bottomleft", metric: true, imperial: true })
+        .addTo(map);
+
+      // =========================
+      // 3) ICON ROTI (roti.png)
+      // =========================
+      const rotiIcon = L.icon({
+        iconUrl: "roti.png",
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -30],
+      });
+
+      // =========================
+      // 4) GLOBAL LAYERS
+      // =========================
+      let kabLayer = null; // polygon kabupaten
+      let tokoLayer = null; // point toko roti
+      let kabIndex = new Map(); // nama kabupaten -> layer polygon
+      let defaultKabBounds = null;
+
+      // warna per kabupaten
+      const kabColors = {
+        "Kota Yogyakarta": "#f6b3c2",
+        Sleman: "#9ec4ff",
+        Bantul: "#9be59b",
+        "Kulon Progo": "#ffe08a",
+        Gunungkidul: "#c8a8ff",
+      };
+
+      // =========================
+      // 5) HELPER: cari field kabupaten (geojson bisa beda nama kolom)
+      // =========================
+      function getKabName(props) {
+        // diy.geojson kamu kelihatan punya "kab_kota"
+        return (
+          props.kab_kota ||
+          props.KAB_KOTA ||
+          props.kabupaten ||
+          props.Kabupaten ||
+          props.nama ||
+          props.NAME ||
+          ""
+        );
+      }
+
+      function getNamaToko(props) {
+        return (
+          props.Nama ||
+          props.nama ||
+          props.NAME ||
+          props.name ||
+          "Nama tidak tersedia"
+        );
+      }
+
+      function getAlamatToko(props) {
+        return (
+          props.Alamat || props.alamat || props.ADDRESS || props.address || "-"
+        );
+      }
+
+      // =========================
+      // 6) STYLE KABUPATEN
+      // =========================
+      function styleKab(feature) {
+        const nm = getKabName(feature.properties);
+        return {
+          color: "#000",
+          weight: 2.5,
+          opacity: 1,
+          fillColor: kabColors[nm] || "#f2c6c6",
+          fillOpacity: 0.45,
+        };
+      }
+
+      function styleKabDim(feature) {
+        // saat salah satu kab dipilih, yg lain dibuat pudar
+        const nm = getKabName(feature.properties);
+        return {
+          color: "#000",
+          weight: 2.0,
+          opacity: 0.6,
+          fillColor: kabColors[nm] || "#f2c6c6",
+          fillOpacity: 0.15,
+        };
+      }
+
+      // =========================
+      // 7) LOAD POLYGON DIY (diy.geojson)
+      // =========================
+      fetch("diy.geojson")
+        .then((r) => r.json())
+        .then((geo) => {
+          kabLayer = L.geoJSON(geo, {
+            style: styleKab,
+            onEachFeature: (feature, layer) => {
+              const nm = getKabName(feature.properties);
+
+              // simpan index kabupaten -> layer polygon
+              if (nm) kabIndex.set(nm, layer);
+
+              // label kabupaten langsung di peta (hitam tanpa background)
+              const center = layer.getBounds().getCenter();
+              L.marker(center, {
+                icon: L.divIcon({
+                  className: "kab-label",
+                  html: nm,
+                  iconSize: [10, 10],
+                }),
+              }).addTo(map);
+
+              // kalau klik polygon, zoom ke polygon tsb (opsional)
+              layer.on("click", () => selectKabupaten(nm));
+            },
+          }).addTo(map);
+
+          defaultKabBounds = kabLayer.getBounds();
+          map.fitBounds(defaultKabBounds, { padding: [30, 30] });
+        })
+        .catch(() =>
+          alert(
+            "Gagal load file GeoJSON kabupaten. Pastikan 'diy.geojson' satu folder dengan index.html",
+          ),
+        );
+
+      // =========================
+      // 8) LOAD TITIK TOKO ROTI (rotii.geojson) -> TANPA CLUSTER (25 titik langsung)
+      // =========================
+      fetch("rotii.geojson")
+        .then((r) => r.json())
+        .then((geo) => {
+          drawToko(geo);
+        })
+        .catch(() =>
+          alert(
+            "Gagal load file titik toko. Pastikan nama file 'rotii.geojson' dan satu folder dengan index.html",
+          ),
+        );
+
+      function drawToko(geojson) {
+        if (tokoLayer) map.removeLayer(tokoLayer);
+
+        tokoLayer = L.geoJSON(geojson, {
+          pointToLayer: (feature, latlng) =>
+            L.marker(latlng, { icon: rotiIcon }),
+          onEachFeature: (feature, layer) => {
+            const p = feature.properties || {};
+            const nm = getNamaToko(p);
+            const al = getAlamatToko(p);
+            layer.bindPopup(`
+            <div class="popup-title">${nm}</div>
+            <div><b>Alamat:</b> ${al}</div>
+          `);
+          },
+        }).addTo(map);
+      }
+
+      // =========================
+      // 9) FILTER & ZOOM KABUPATEN DARI LEGENDA
+      //    - polygon lain pudar
+      //    - zoom ke kabupaten yang dipilih
+      //    - titik toko roti TIDAK berubah (tetap 25 tampil semua)
+      // =========================
+      function clearActiveButtons() {
+        document
+          .querySelectorAll(".kab-btn")
+          .forEach((b) => b.classList.remove("active"));
+      }
+
+      function selectKabupaten(namaKab) {
+        if (!kabLayer) return;
+
+        // set tombol aktif
+        clearActiveButtons();
+        const btn = document.querySelector(`.kab-btn[data-kab="${namaKab}"]`);
+        if (btn) btn.classList.add("active");
+
+        // ubah style kabupaten: yg dipilih normal, yg lain pudar
+        kabLayer.eachLayer((layer) => {
+          const nm = getKabName(layer.feature.properties);
+          if (nm === namaKab) {
+            layer.setStyle(styleKab(layer.feature));
+            layer.bringToFront();
+          } else {
+            layer.setStyle(styleKabDim(layer.feature));
+          }
+        });
+
+        // zoom ke kabupaten yg dipilih
+        const kabPoly = kabIndex.get(namaKab);
+        if (kabPoly) {
+          map.fitBounds(kabPoly.getBounds(), { padding: [40, 40] });
+        }
+      }
+
+      function resetKabupaten() {
+        clearActiveButtons();
+        if (!kabLayer) return;
+
+        kabLayer.eachLayer((layer) => {
+          layer.setStyle(styleKab(layer.feature));
+        });
+
+        if (defaultKabBounds) {
+          map.fitBounds(defaultKabBounds, { padding: [30, 30] });
+        }
+      }
+
+      // =========================
+      // 10) EVENT BUTTONS
+      // =========================
+      document.querySelectorAll(".kab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const nm = btn.getAttribute("data-kab");
+          selectKabupaten(nm);
+        });
+      });
+
+      document
+        .getElementById("btnReset")
+        .addEventListener("click", resetKabupaten);
+      document
+        .getElementById("btnHome")
+        .addEventListener("click", resetKabupaten);
+    </script>
+  </body>
+</html>
